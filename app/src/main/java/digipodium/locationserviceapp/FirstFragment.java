@@ -15,6 +15,9 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
+import androidx.work.Data;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkManager;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationAvailability;
@@ -28,11 +31,15 @@ import com.google.android.material.chip.Chip;
 
 import java.util.List;
 
+import static digipodium.locationserviceapp.AddressFinderWorker.LATITUDE;
+import static digipodium.locationserviceapp.AddressFinderWorker.LONGITUDE;
+import static digipodium.locationserviceapp.AddressFinderWorker.RESULT;
+
 public class FirstFragment extends Fragment {
 
     FusedLocationProviderClient locationClient;
     private TextView tvLocUpdates;
-    private TextView tvLoc;
+    private TextView tvLoc, tvAddress;
     private Chip chipUpdate;
     private LocationRequest locationRequest;
     private LocationCallback locationCallback;
@@ -51,6 +58,7 @@ public class FirstFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
         tvLoc = view.findViewById(R.id.tvLoc);
         tvLocUpdates = view.findViewById(R.id.tvLocUpdate);
+        tvAddress = view.findViewById(R.id.tvAddress);
         chipUpdate = view.findViewById(R.id.chipUpdate);
 
         locationClient = LocationServices.getFusedLocationProviderClient(getActivity());
@@ -112,6 +120,25 @@ public class FirstFragment extends Fragment {
                     double lng = location.getLongitude();
                     String output = "LOCATION:" + lat + ":" + lng;
                     tvLoc.setText(output);
+
+                    // address fetching
+                    Data locationData = new Data.Builder()
+                            .putDouble(LATITUDE, lat)
+                            .putDouble(LONGITUDE, lng)
+                            .build();
+
+                    OneTimeWorkRequest lastKnowLocRequest = new OneTimeWorkRequest.Builder(AddressFinderWorker.class)
+                            .setInputData(locationData)
+                            .build();
+
+                    WorkManager.getInstance(getActivity()).enqueue(lastKnowLocRequest);
+                    WorkManager.getInstance(getActivity()).getWorkInfoByIdLiveData(lastKnowLocRequest.getId())
+                            .observe(getViewLifecycleOwner(),workInfo -> {
+                                if (workInfo!=null && workInfo.getState().isFinished()) {
+                                    String addresses = workInfo.getOutputData().getString(RESULT);
+                                    tvAddress.setText(addresses);
+                                }
+                            });
                 }
             }
         });
