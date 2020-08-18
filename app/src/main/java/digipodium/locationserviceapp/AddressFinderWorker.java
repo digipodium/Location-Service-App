@@ -39,7 +39,7 @@ public class AddressFinderWorker extends Worker {
         Geocoder geocoder = new Geocoder(context, Locale.getDefault());
         List<Address> addresses = null;
         try {
-            addresses = geocoder.getFromLocation(lat, lng, 5);
+            addresses = geocoder.getFromLocation(lat, lng, 2);
         } catch (IOException e) {
             resultMsg = e.getMessage();
         }
@@ -52,12 +52,13 @@ public class AddressFinderWorker extends Worker {
             StringBuilder builder = new StringBuilder();
             for (Address address : addresses) {
                 ArrayList<String> addressParts = new ArrayList<>();
-                for (int i = 0; i < address.getMaxAddressLineIndex(); i++) {
+                int maxlines = address.getMaxAddressLineIndex();
+                for (int i = 0; i <= maxlines; i++) {
                     addressParts.add(address.getAddressLine(i));
                 }
                 String locAddress = TextUtils.join("\n", addressParts);
                 builder.append(locAddress);
-                builder.append("\n");
+                builder.append("\n\n\n");
             }
             resultMsg = builder.toString();
         }

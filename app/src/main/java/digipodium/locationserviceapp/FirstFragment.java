@@ -15,7 +15,9 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
+import androidx.work.Constraints;
 import androidx.work.Data;
+import androidx.work.NetworkType;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkManager;
 
@@ -127,8 +129,12 @@ public class FirstFragment extends Fragment {
                             .putDouble(LONGITUDE, lng)
                             .build();
 
+                    Constraints constraint = new Constraints.Builder()
+                            .setRequiredNetworkType(NetworkType.CONNECTED)
+                            .build();
                     OneTimeWorkRequest lastKnowLocRequest = new OneTimeWorkRequest.Builder(AddressFinderWorker.class)
                             .setInputData(locationData)
+                            .setConstraints(constraint)
                             .build();
 
                     WorkManager.getInstance(getActivity()).enqueue(lastKnowLocRequest);
