@@ -11,6 +11,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CompoundButton;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
@@ -30,6 +31,15 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.chip.Chip;
+import com.mapbox.mapboxsdk.Mapbox;
+import com.mapbox.mapboxsdk.annotations.Marker;
+import com.mapbox.mapboxsdk.annotations.MarkerOptions;
+import com.mapbox.mapboxsdk.camera.CameraPosition;
+import com.mapbox.mapboxsdk.geometry.LatLng;
+import com.mapbox.mapboxsdk.maps.MapView;
+import com.mapbox.mapboxsdk.maps.MapboxMap;
+import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
+import com.mapbox.mapboxsdk.maps.Style;
 
 import java.util.List;
 
@@ -45,6 +55,9 @@ public class FirstFragment extends Fragment {
     private Chip chipUpdate;
     private LocationRequest locationRequest;
     private LocationCallback locationCallback;
+    public static final String API_KEY = "pk.eyJ1IjoiemFpZGthbWlsIiwiYSI6ImNrNXh2Z2xiYjBnazkzbHBkNG03enQ4NTYifQ.8sAJfK4lDkZ8hysdCxF-Ag";
+    private MapView mapView;
+    private MapboxMap mapboxMap;
 
     @Override
     public View onCreateView(
@@ -52,6 +65,7 @@ public class FirstFragment extends Fragment {
             Bundle savedInstanceState
     ) {
         // Inflate the layout for this fragment
+        Mapbox.getInstance(getActivity(), API_KEY);
         return inflater.inflate(R.layout.fragment_first, container, false);
     }
 
@@ -63,6 +77,21 @@ public class FirstFragment extends Fragment {
         tvAddress = view.findViewById(R.id.tvAddress);
         chipUpdate = view.findViewById(R.id.chipUpdate);
 
+        mapView = view.findViewById(R.id.mapView);
+        mapView.onCreate(savedInstanceState);
+        mapView.getMapAsync(new OnMapReadyCallback() {
+            @Override
+            public void onMapReady(@NonNull MapboxMap mapboxMap) {
+                FirstFragment.this.mapboxMap = mapboxMap;
+                mapboxMap.setStyle(Style.MAPBOX_STREETS, new Style.OnStyleLoaded() {
+                    @Override
+                    public void onStyleLoaded(@NonNull Style style) {
+                        Toast.makeText(getActivity(), "map loaded", Toast.LENGTH_SHORT).show();
+                    }
+                });
+
+            }
+        });
         locationClient = LocationServices.getFusedLocationProviderClient(getActivity());
         chipUpdate.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
@@ -95,6 +124,11 @@ public class FirstFragment extends Fragment {
                     tvLocUpdates.setText("");
                     if (location != null) {
                         tvLocUpdates.append("LOC " + location.getLatitude() + " : " + location.getLongitude());
+                        LatLng latLng= new LatLng(location.getLatitude(),location.getLongitude());
+                        CameraPosition camPos = new CameraPosition.Builder().target(latLng).zoom(12).build();
+                        MarkerOptions options= new MarkerOptions().position(latLng).setTitle("your location");
+                        mapboxMap.addMarker(options);
+                        mapboxMap.setCameraPosition(camPos);
                     }
                 }
 
